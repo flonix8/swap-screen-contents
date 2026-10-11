@@ -27,6 +27,8 @@ by (or floating over) a panel when it lands on a screen with a different usable 
   Maximized/fullscreen windows are re-fit by KWin.
 - Optional settings: include minimized windows, include windows shown on all
   desktops, and exclude specific screens (see [Configuration](#configuration)).
+- Rate-limited: holding the hotkey swaps at most every 200 ms, so fast key repeat
+  can't outrun window moves.
 
 ## Install
 
@@ -72,6 +74,11 @@ System Settings → Window Management → KWin Scripts → **Swap Screen Content
   screens left the shortcut does nothing.
 
 Shortcuts aren't set here. KDE manages them in the Shortcuts settings (see above).
+
+> **Note:** *Apply* in the Configure dialog doesn't notify running scripts — a KWin
+> limitation ([KDE bug 505251](https://bugs.kde.org/show_bug.cgi?id=505251)). After
+> changing settings, disable and re-enable the script, or run
+> `qdbus6 org.kde.KWin /KWin reconfigure`.
 
 ## How it works
 

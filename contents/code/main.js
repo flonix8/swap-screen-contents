@@ -16,7 +16,9 @@
 
 var MAXIMIZE_AREA = 2; // workspace.clientArea() option: panel-aware "maximize" rect
 
-// Read on every invocation, so changes from the config dialog apply immediately.
+// Read on every invocation, so new values apply as soon as KWin reloads its config.
+// Apply in the config dialog alone doesn't trigger that reload for scripts
+// (KDE bug 505251): toggle the script or run `qdbus6 org.kde.KWin /KWin reconfigure`.
 function loadConfig() {
     var excluded = String(readConfig("ExcludedScreens", "")).split(/[\s,]+/)
         .filter(function (name) { return name.length > 0; });
@@ -120,9 +122,20 @@ function rotate(dir) {
     }
 }
 
+// Key auto-repeat fires the shortcut many times per second, faster than clients
+// apply the previous move. Rate-limit: ignore any press within COOLDOWN_MS of the
+// last swap, so a held key swaps at a steady pace and every swap can settle.
+var COOLDOWN_MS = 200, lastSwap = 0;
+function onPress(dir) {
+    var now = Date.now();
+    if (now - lastSwap < COOLDOWN_MS) return;
+    lastSwap = now;
+    rotate(dir);
+}
+
 registerShortcut("SwapScreenContents",
     "Swap Screen Contents (forward)", "",
-    function () { rotate(1); });
+    function () { onPress(1); });
 registerShortcut("SwapScreenContentsReverse",
     "Swap Screen Contents (reverse)", "",
-    function () { rotate(-1); });
+    function () { onPress(-1); });
