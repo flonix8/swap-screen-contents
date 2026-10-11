@@ -31,6 +31,23 @@
     </widget>
    </item>
    <item row="2" column="0">
+    <widget class="QLabel" name="focusLabel">
+     <property name="text">
+      <string>Focus:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QCheckBox" name="kcfg_KeepFocusOnScreen">
+     <property name="text">
+      <string>Keep focus on the current screen</string>
+     </property>
+     <property name="toolTip">
+      <string>After a swap, activate the most recently used window that arrived on the screen you were on, instead of following the focused window to its new screen.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
     <widget class="QLabel" name="excludedLabel">
      <property name="text">
       <string>Excluded screens:</string>
@@ -40,14 +57,14 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
+   <item row="3" column="1">
     <widget class="QLineEdit" name="kcfg_ExcludedScreens">
      <property name="placeholderText">
       <string>e.g. DP-2, HDMI-A-1</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="1">
+   <item row="4" column="1">
     <widget class="QLabel" name="excludedHelp">
      <property name="text">
       <string>Comma-separated output names (run &lt;code&gt;kscreen-doctor -o&lt;/code&gt; to list them). Windows on excluded screens are left alone; the remaining screens swap / rotate among themselves.</string>
@@ -60,14 +77,14 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
+   <item row="5" column="0">
     <widget class="QLabel" name="shortcutsLabel">
      <property name="text">
       <string>Shortcuts:</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
+   <item row="5" column="1">
     <widget class="QLabel" name="shortcutsHelp">
      <property name="text">
       <string>Set in System Settings → Keyboard → Shortcuts → KWin. Search for “swap” to find both “Swap Screen Contents” actions. No keys are bound by default.</string>
@@ -77,7 +94,7 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="0" colspan="2">
+   <item row="6" column="0" colspan="2">
     <widget class="QLabel" name="reloadNote">
      <property name="text">
       <string>&lt;b&gt;Note:&lt;/b&gt; due to a KWin limitation, changes take effect only after the script is disabled and re-enabled, or after running &lt;code&gt;qdbus6 org.kde.KWin /KWin reconfigure&lt;/code&gt;.</string>

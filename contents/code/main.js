@@ -8,8 +8,10 @@
 // clipped or left floating over a panel.
 //
 // Options (System Settings → KWin Scripts → Configure): include minimized
-// windows, include windows shown on all desktops, and exclude screens by output
-// name — excluded screens are left alone and the rest rotate among themselves.
+// windows, include windows shown on all desktops, keep focus on the current
+// screen (activating the most recently used window arriving there), and exclude
+// screens by output name — excluded screens are left alone and the rest rotate
+// among themselves.
 //
 // Copyright (C) 2026 Cyrus Omar
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -25,6 +27,7 @@ function loadConfig() {
     return {
         includeMinimized: readConfig("IncludeMinimized", false),
         includeAllDesktops: readConfig("IncludeAllDesktops", true),
+        keepFocusOnScreen: readConfig("KeepFocusOnScreen", false),
         excluded: excluded
     };
 }
@@ -53,8 +56,9 @@ function movable(w, cfg) {
         && w.moveableAcrossScreens !== false;
 }
 
+// Returned in stacking order, bottom → top.
 function visibleWindows(screen, desktop, cfg) {
-    var out = [], all = workspace.windowList();
+    var out = [], all = workspace.stackingOrder;
     for (var i = 0; i < all.length; i++) {
         var w = all[i];
         if (movable(w, cfg) && onScreen(w, screen) && onActiveDesktop(w, desktop, cfg)) out.push(w);
@@ -96,6 +100,38 @@ function relocate(w, srcArea, dstArea, dstScreen, dstDesktop) {
     if (!w.onAllDesktops) w.desktops = [dstDesktop];
 }
 
+// Focus history, most recent first. KWin's own focus chain isn't exposed to
+// scripts, so record activations here. Reset on every script load and seeded
+// from the stacking order, which approximates recency until real activations
+// come in.
+var MRU_MAX = 64, mru = [];
+
+function forget(w) {
+    var i = mru.indexOf(w);
+    if (i >= 0) mru.splice(i, 1);
+}
+
+function touch(w) {
+    if (!w) return;
+    forget(w);
+    mru.unshift(w);
+    if (mru.length > MRU_MAX) mru.length = MRU_MAX;
+}
+
+// The most recently used focusable window of a group (bottom → top). Falls back
+// to the topmost one when none of them has been seen activating.
+function focusTarget(group) {
+    var best = null, bestRank = -1;
+    for (var i = 0; i < group.length; i++) {
+        var w = group[i];
+        if (w.minimized || w.wantsInput === false) continue;
+        var rank = mru.indexOf(w);
+        if (rank < 0) rank = MRU_MAX + group.length - i;   // unseen: rank below seen ones, topmost first
+        if (!best || rank < bestRank) { best = w; bestRank = rank; }
+    }
+    return best;
+}
+
 // Rotate each screen's visible windows to the next screen (dir = +1 / -1).
 // With exactly two screens this is a straight swap in either direction.
 // Excluded screens are skipped entirely.
@@ -114,12 +150,26 @@ function rotate(dir) {
         area[i] = workArea(screens[i], desk[i]);
         wins[i] = visibleWindows(screens[i], desk[i], cfg);   // snapshot ALL before moving anything
     }
+
+    // Keep focus on the active screen: choose among the windows arriving there.
+    // Pick from this pre-move snapshot; window outputs may lag right after moving.
+    var target = null, active = workspace.activeWindow;
+    if (cfg.keepFocusOnScreen && active) {
+        for (var a = 0; a < n; a++) {
+            if (onScreen(active, screens[a])) {
+                target = focusTarget(wins[((a - dir) % n + n) % n]);
+                break;
+            }
+        }
+    }
+
     for (var s = 0; s < n; s++) {
         var t = ((s + dir) % n + n) % n;
         for (var k = 0; k < wins[s].length; k++) {
             relocate(wins[s][k], area[s], area[t], screens[t], desk[t]);
         }
     }
+    if (target) workspace.activeWindow = target;
 }
 
 // Key auto-repeat fires the shortcut many times per second, faster than clients
@@ -132,6 +182,12 @@ function onPress(dir) {
     lastSwap = now;
     rotate(dir);
 }
+
+var seed = workspace.stackingOrder;
+for (var i = 0; i < seed.length; i++) if (seed[i].normalWindow) touch(seed[i]);
+touch(workspace.activeWindow);
+workspace.windowActivated.connect(touch);
+workspace.windowRemoved.connect(forget);
 
 registerShortcut("SwapScreenContents",
     "Swap Screen Contents (forward)", "",
