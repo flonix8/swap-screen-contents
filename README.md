@@ -26,7 +26,7 @@ by (or floating over) a panel when it lands on a screen with a different usable 
   to fill the target. Smaller windows keep their size and relative position.
   Maximized/fullscreen windows are re-fit by KWin.
 - Optional settings: include minimized windows, include windows shown on all
-  desktops, and exclude specific screens (see [Configuration](#configuration)).
+  desktops, keep focus on the current screen, and exclude specific screens (see [Configuration](#configuration)).
 - Rate-limited: holding the hotkey swaps at most every 200 ms, so fast key repeat
   can't outrun window moves.
 
@@ -68,6 +68,12 @@ System Settings → Window Management → KWin Scripts → **Swap Screen Content
   stay minimized.
 - **Include windows shown on all desktops** (on by default): when off, windows pinned
   to all desktops stay where they are.
+- **Keep focus on the current screen** (off by default): after a swap, focus stays on
+  the screen you were on and goes to the most recently used of the windows that just
+  arrived there, instead of following the focused window to its new screen. The
+  script records focus history itself (KWin doesn't expose its own to scripts), so
+  history starts over whenever the script or KWin restarts. Until then, the stacking
+  order stands in for it.
 - **Excluded screens**: comma-separated output names (list them with
   `kscreen-doctor -o`, e.g. `DP-2, HDMI-A-1`). Windows on excluded screens are left
   alone and the remaining screens swap / rotate among themselves; with fewer than two

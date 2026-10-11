@@ -11,6 +11,9 @@
     <entry name="IncludeAllDesktops" type="bool">
       <default>true</default>
     </entry>
+    <entry name="KeepFocusOnScreen" type="bool">
+      <default>false</default>
+    </entry>
     <entry name="ExcludedScreens" type="string">
       <default></default>
     </entry>
