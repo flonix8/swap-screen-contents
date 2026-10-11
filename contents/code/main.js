@@ -7,10 +7,25 @@
 // panel-aware work area, so full-size windows are trimmed/expanded rather than
 // clipped or left floating over a panel.
 //
+// Options (System Settings → KWin Scripts → Configure): include minimized
+// windows, include windows shown on all desktops, and exclude screens by output
+// name — excluded screens are left alone and the rest rotate among themselves.
+//
 // Copyright (C) 2026 Cyrus Omar
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 var MAXIMIZE_AREA = 2; // workspace.clientArea() option: panel-aware "maximize" rect
+
+// Read on every invocation, so changes from the config dialog apply immediately.
+function loadConfig() {
+    var excluded = String(readConfig("ExcludedScreens", "")).split(/[\s,]+/)
+        .filter(function (name) { return name.length > 0; });
+    return {
+        includeMinimized: readConfig("IncludeMinimized", false),
+        includeAllDesktops: readConfig("IncludeAllDesktops", true),
+        excluded: excluded
+    };
+}
 
 function workArea(screen, desktop) { return workspace.clientArea(MAXIMIZE_AREA, screen, desktop); }
 
@@ -24,22 +39,23 @@ function screenDesktop(screen) {
 
 function onScreen(w, s) { return w.output && w.output.name === s.name; }
 
-function onActiveDesktop(w, d) {
-    if (w.onAllDesktops) return true;
+function onActiveDesktop(w, d, cfg) {
+    if (w.onAllDesktops) return cfg.includeAllDesktops;
     var ds = w.desktops || [];
     for (var i = 0; i < ds.length; i++) if (ds[i].id === d.id) return true;
     return false;
 }
 
-function movable(w) {
-    return w.normalWindow && !w.minimized && w.moveableAcrossScreens !== false;
+function movable(w, cfg) {
+    return w.normalWindow && (cfg.includeMinimized || !w.minimized)
+        && w.moveableAcrossScreens !== false;
 }
 
-function visibleWindows(screen, desktop) {
+function visibleWindows(screen, desktop, cfg) {
     var out = [], all = workspace.windowList();
     for (var i = 0; i < all.length; i++) {
         var w = all[i];
-        if (movable(w) && onScreen(w, screen) && onActiveDesktop(w, desktop)) out.push(w);
+        if (movable(w, cfg) && onScreen(w, screen) && onActiveDesktop(w, desktop, cfg)) out.push(w);
     }
     return out;
 }
@@ -80,15 +96,21 @@ function relocate(w, srcArea, dstArea, dstScreen, dstDesktop) {
 
 // Rotate each screen's visible windows to the next screen (dir = +1 / -1).
 // With exactly two screens this is a straight swap in either direction.
+// Excluded screens are skipped entirely.
 function rotate(dir) {
-    var screens = workspace.screens, n = screens.length;
+    var cfg = loadConfig();
+    var screens = [], all = workspace.screens;
+    for (var j = 0; j < all.length; j++) {
+        if (cfg.excluded.indexOf(all[j].name) < 0) screens.push(all[j]);
+    }
+    var n = screens.length;
     if (n < 2) return;
 
     var desk = [], area = [], wins = [];
     for (var i = 0; i < n; i++) {
         desk[i] = screenDesktop(screens[i]);
         area[i] = workArea(screens[i], desk[i]);
-        wins[i] = visibleWindows(screens[i], desk[i]);   // snapshot ALL before moving anything
+        wins[i] = visibleWindows(screens[i], desk[i], cfg);   // snapshot ALL before moving anything
     }
     for (var s = 0; s < n; s++) {
         var t = ((s + dir) % n + n) % n;
@@ -99,8 +121,8 @@ function rotate(dir) {
 }
 
 registerShortcut("SwapScreenContents",
-    "Swap / rotate screen contents", "",
+    "Swap Screen Contents (forward)", "",
     function () { rotate(1); });
 registerShortcut("SwapScreenContentsReverse",
-    "Rotate screen contents (reverse direction)", "",
+    "Swap Screen Contents (reverse)", "",
     function () { rotate(-1); });
