@@ -27,8 +27,6 @@ by (or floating over) a panel when it lands on a screen with a different usable 
   Maximized/fullscreen windows are re-fit by KWin.
 - Optional settings: include minimized windows, include windows shown on all
   desktops, keep focus on the current screen, and exclude specific screens (see [Configuration](#configuration)).
-- Rate-limited: holding the hotkey swaps at most every 200 ms, so fast key repeat
-  can't outrun window moves.
 
 ## Install
 
